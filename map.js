@@ -77,15 +77,15 @@ const circles = svg
   .attr('stroke', 'white') // Circle border color
   .attr('stroke-width', 1) // Circle border thickness
   .attr('opacity', 0.6) // Circle opacity
-  .attr('r', d => radiusScale(d.totalTraffic));
-  .each(function (d)) {
+  .attr('pointer-events', 'auto')
+  .each(function (d) {
      // Add <title> for browser tooltips
     d3.select(this)
       .append('title')
       .text(
         `${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`,
       );
-  }
+  })
 
 // Function to update circle positions when the map moves/zooms
 function updatePositions() {
@@ -130,9 +130,8 @@ const radiusScale = d3
   .domain([0, d3.max(stations, (d) => d.totalTraffic)])
   .range([0, 25]);
 
-  circles
-  .attr('r', d => radiusScale(d.totalTraffic));
-  
+circles.attr('r', d => radiusScale(d.totalTraffic));  
+
 } catch (error) {
     console.error('Error loading JSON:', error); // Handle errors
   }
