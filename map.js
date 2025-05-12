@@ -62,8 +62,9 @@ map.addLayer({
     const jsonData = await d3.json(jsonurl);
 
     console.log('Loaded JSON Data:', jsonData); // Log to verify structure
-    let stations = jsonData.data.stations;
-    console.log('Stations Array:', stations);
+    //let stations = jsonData.data.stations;
+    const stations = computeStationTraffic(jsonData.data.stations, trips);
+    //console.log('Stations Array:', stations);
     
 
 const trips = await d3.csv('https://dsc106.com/labs/lab07/data/bluebikes-traffic-2024-03.csv');
@@ -78,7 +79,7 @@ const arrivals = d3.rollup(
   (d) => d.end_station_id,
 );
 
-stations = stations.map((station) => {
+/*stations = stations.map((station) => {
   let id = station.short_name;
   station.arrivals = arrivals.get(id) ?? 0;
   // TODO departures
@@ -132,6 +133,29 @@ map.on('zoom', updatePositions); // Update during zooming
 map.on('resize', updatePositions); // Update on window resize
 map.on('moveend', updatePositions); // Final adjustment after movement ends  
 
+const timeSlider = document.getElementById('#time-slider');
+const selectedTime = document.getElementById('#selected-time');
+const anyTimeLabel = document.getElementById('#any-time');
+
+function updateTimeDisplay() {
+  timeFilter = Number(timeSlider.value); // Get slider value
+
+  if (timeFilter === -1) {
+    selectedTime.textContent = ''; // Clear time display
+    anyTimeLabel.style.display = 'block'; // Show "(any time)"
+  } else {
+    selectedTime.textContent = formatTime(timeFilter); // Display formatted time
+    anyTimeLabel.style.display = 'none'; // Hide "(any time)"
+  }
+
+  // Trigger filtering logic which will be implemented in the next step
+}
+
+timeSlider.addEventListener('input', updateTimeDisplay);
+updateTimeDisplay();
+
+const stations = computeStationTraffic(jsonData.data.stations, trips);
+
 } catch (error) {
     console.error('Error loading JSON:', error); // Handle errors
   }
@@ -141,4 +165,35 @@ function getCoords(station) {
   const point = new mapboxgl.LngLat(+station.lon, +station.lat); // Convert lon/lat to Mapbox LngLat
   const { x, y } = map.project(point); // Project to pixel coordinates
   return { cx: x, cy: y }; // Return as object for use in SVG attributes
+}
+
+function formatTime(minutes) {
+  const date = new Date(0, 0, 0, 0, minutes); // Set hours & minutes
+  return date.toLocaleString('en-US', { timeStyle: 'short' }); // Format as HH:MM AM/PM
+}
+
+function computeStationTraffic(stations, trips) {
+  // Compute departures
+  const departures = d3.rollup(
+    trips,
+    (v) => v.length,
+    (d) => d.start_station_id,
+  );
+
+  // Computed arrivals as you did in step 4.2
+  const arrivals = d3.rollup(
+  trips,
+  (v) => v.length,
+  (d) => d.end_station_id,
+);
+
+
+  // Update each station..
+  return stations.map((station) => {
+    let id = station.short_name;
+    station.arrivals = arrivals.get(id) ?? 0;
+    // what you updated in step 4.2
+    station.departures = departures.get(id) ?? 0;
+    return station;
+  });
 }
