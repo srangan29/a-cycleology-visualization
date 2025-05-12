@@ -63,11 +63,19 @@ map.addLayer({
 
     console.log('Loaded JSON Data:', jsonData); // Log to verify structure
     //let stations = jsonData.data.stations;
-    const stations = computeStationTraffic(jsonData.data.stations, trips);
     //console.log('Stations Array:', stations);
-    
+    let trips = await d3.csv(
+  'https://dsc106.com/labs/lab07/data/bluebikes-traffic-2024-03.csv',
+  (trip) => {
+    trip.started_at = new Date(trip.started_at);
+    trip.ended_at = new Date(trip.ended_at);
+    return trip;
+  },
+);
 
-const trips = await d3.csv('https://dsc106.com/labs/lab07/data/bluebikes-traffic-2024-03.csv');
+const stations = computeStationTraffic(jsonData.data.stations, trips);
+
+/*const trips = await d3.csv('https://dsc106.com/labs/lab07/data/bluebikes-traffic-2024-03.csv');
 const departures = d3.rollup(
   trips,
   (v) => v.length,
@@ -79,7 +87,7 @@ const arrivals = d3.rollup(
   (d) => d.end_station_id,
 );
 
-/*stations = stations.map((station) => {
+stations = stations.map((station) => {
   let id = station.short_name;
   station.arrivals = arrivals.get(id) ?? 0;
   // TODO departures
@@ -99,7 +107,7 @@ const radiusScale = d3
 const svg = d3.select('#map').select('svg');
 const circles = svg
   .selectAll('circle')
-  .data(stations)
+  .data(stations, (d) => d.short_name) // Use station short_name as the key
   .enter()
   .append('circle')
   .attr('r', 5) // Radius of the circle
@@ -137,6 +145,21 @@ const timeSlider = document.getElementById('#time-slider');
 const selectedTime = document.getElementById('#selected-time');
 const anyTimeLabel = document.getElementById('#any-time');
 
+function updateScatterPlot(timeFilter) {
+  // Get only the trips that match the selected time filter
+  const filteredTrips = filterTripsbyTime(trips, timeFilter);
+
+  // Recompute station traffic based on the filtered trips
+  const filteredStations = computeStationTraffic(stations, filteredTrips);
+
+  timeFilter === -1 ? radiusScale.range([0, 25]) : radiusScale.range([3, 50]);
+  // Update the scatterplot by adjusting the radius of circles
+  circles
+    .data(filteredStations, (d) => d.short_name ) // Ensure D3 tracks elements correctly
+    .join('circle') // Ensure the data is bound correctly
+    .attr('r', (d) => radiusScale(d.totalTraffic)); // Update circle sizes
+}
+
 function updateTimeDisplay() {
   timeFilter = Number(timeSlider.value); // Get slider value
 
@@ -147,14 +170,14 @@ function updateTimeDisplay() {
     selectedTime.textContent = formatTime(timeFilter); // Display formatted time
     anyTimeLabel.style.display = 'none'; // Hide "(any time)"
   }
-
   // Trigger filtering logic which will be implemented in the next step
+// Call updateScatterPlot to reflect the changes on the map
+updateScatterPlot(timeFilter);
 }
 
 timeSlider.addEventListener('input', updateTimeDisplay);
 updateTimeDisplay();
 
-const stations = computeStationTraffic(jsonData.data.stations, trips);
 
 } catch (error) {
     console.error('Error loading JSON:', error); // Handle errors
@@ -187,7 +210,6 @@ function computeStationTraffic(stations, trips) {
   (d) => d.end_station_id,
 );
 
-
   // Update each station..
   return stations.map((station) => {
     let id = station.short_name;
@@ -196,4 +218,24 @@ function computeStationTraffic(stations, trips) {
     station.departures = departures.get(id) ?? 0;
     return station;
   });
+}
+
+function minutesSinceMidnight(date) {
+  return date.getHours() * 60 + date.getMinutes();
+}
+
+function filterTripsbyTime(trips, timeFilter) {
+  return timeFilter === -1
+    ? trips // If no filter is applied (-1), return all trips
+    : trips.filter((trip) => {
+        // Convert trip start and end times to minutes since midnight
+        const startedMinutes = minutesSinceMidnight(trip.started_at);
+        const endedMinutes = minutesSinceMidnight(trip.ended_at);
+
+        // Include trips that started or ended within 60 minutes of the selected time
+        return (
+          Math.abs(startedMinutes - timeFilter) <= 60 ||
+          Math.abs(endedMinutes - timeFilter) <= 60
+        );
+      });
 }
