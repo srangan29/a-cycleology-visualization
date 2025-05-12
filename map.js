@@ -75,29 +75,6 @@ map.addLayer({
 
 const stations = computeStationTraffic(jsonData.data.stations, trips);
 
-/*const trips = await d3.csv('https://dsc106.com/labs/lab07/data/bluebikes-traffic-2024-03.csv');
-const departures = d3.rollup(
-  trips,
-  (v) => v.length,
-  (d) => d.start_station_id,
-);
-const arrivals = d3.rollup(
-  trips,
-  (v) => v.length,
-  (d) => d.end_station_id,
-);
-
-stations = stations.map((station) => {
-  let id = station.short_name;
-  station.arrivals = arrivals.get(id) ?? 0;
-  // TODO departures
-  station.departures = departures.get(id) ?? 0;
-  // TODO totalTraffic
-  station.totalTraffic = station.arrivals + station.departures
-  return station;
-});
-/*console.log('test', stations);*/
-
 const radiusScale = d3
   .scaleSqrt()
   .domain([0, d3.max(stations, (d) => d.totalTraffic)])
@@ -141,27 +118,12 @@ map.on('zoom', updatePositions); // Update during zooming
 map.on('resize', updatePositions); // Update on window resize
 map.on('moveend', updatePositions); // Final adjustment after movement ends  
 
-const timeSlider = document.getElementById('#time-slider');
-const selectedTime = document.getElementById('#selected-time');
-const anyTimeLabel = document.getElementById('#any-time');
-
-function updateScatterPlot(timeFilter) {
-  // Get only the trips that match the selected time filter
-  const filteredTrips = filterTripsbyTime(trips, timeFilter);
-
-  // Recompute station traffic based on the filtered trips
-  const filteredStations = computeStationTraffic(stations, filteredTrips);
-
-  timeFilter === -1 ? radiusScale.range([0, 25]) : radiusScale.range([3, 50]);
-  // Update the scatterplot by adjusting the radius of circles
-  circles
-    .data(filteredStations, (d) => d.short_name ) // Ensure D3 tracks elements correctly
-    .join('circle') // Ensure the data is bound correctly
-    .attr('r', (d) => radiusScale(d.totalTraffic)); // Update circle sizes
-}
+const timeSlider = document.getElementById('time-slider');
+const selectedTime = document.getElementById('selected-time');
+const anyTimeLabel = document.getElementById('any-time');
 
 function updateTimeDisplay() {
-  timeFilter = Number(timeSlider.value); // Get slider value
+  let timeFilter = Number(timeSlider.value); // Get slider value
 
   if (timeFilter === -1) {
     selectedTime.textContent = ''; // Clear time display
@@ -178,6 +140,32 @@ updateScatterPlot(timeFilter);
 timeSlider.addEventListener('input', updateTimeDisplay);
 updateTimeDisplay();
 
+function updateScatterPlot(timeFilter) {
+  // Get only the trips that match the selected time filter
+  const filteredTrips = filterTripsbyTime(trips, timeFilter);
+
+  // Recompute station traffic based on the filtered trips
+  const filteredStations = computeStationTraffic(stations, filteredTrips);
+
+  timeFilter === -1 ? radiusScale.range([0, 25]) : radiusScale.range([3, 50]);
+  // Update the scatterplot by adjusting the radius of circles
+  circles
+    .data(filteredStations, (d) => d.short_name) // Ensure D3 tracks elements correctly
+    .join('circle') // Ensure the data is bound correctly
+    .attr('r', (d) => radiusScale(d.totalTraffic)); // Update circle sizes
+}
+
+/*let departuresByMinute = Array.from({ length: 1440 }, () => []);
+let arrivalsByMinute = Array.from({ length: 1440 }, () => []);
+
+let startedMinutes = minutesSinceMidnight(trip.started_at);
+//This function returns how many minutes have passed since `00:00` (midnight).
+departuresByMinute[startedMinutes].push(trip);
+//This adds the trip to the correct index in `departuresByMinute` so that later we can efficiently retrieve all trips that started at a specific time.
+
+arrivalsByMinute[startedMinutes].push(trip);
+// Same for arrivals
+*/
 
 } catch (error) {
     console.error('Error loading JSON:', error); // Handle errors
@@ -216,6 +204,7 @@ function computeStationTraffic(stations, trips) {
     station.arrivals = arrivals.get(id) ?? 0;
     // what you updated in step 4.2
     station.departures = departures.get(id) ?? 0;
+    station.totalTraffic = station.arrivals + station.departures;
     return station;
   });
 }
