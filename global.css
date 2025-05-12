@@ -16,3 +16,16 @@ h1 {
 p {
     margin-top: 0;
 }
+
+header {
+    display: flex;
+    gap: 1em;
+    align-items: baseline;
+    label {
+        margin-left: auto;
+    }
+    em, time {
+        display: block;
+        margin-left: auto;
+    }
+}
