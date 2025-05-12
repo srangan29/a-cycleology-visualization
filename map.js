@@ -80,6 +80,7 @@ const radiusScale = d3
   .domain([0, d3.max(stations, (d) => d.totalTraffic)])
   .range([0, 25]);
 
+let stationFlow = d3.scaleQuantize().domain([0, 1]).range([0, 0.5, 1]);
 // Append circles to the SVG for each station
 const svg = d3.select('#map').select('svg');
 const circles = svg
@@ -102,6 +103,9 @@ const circles = svg
         `${d.totalTraffic} trips (${d.departures} departures, ${d.arrivals} arrivals)`,
       );
   })
+  .style('--departure-ratio', (d) =>
+    stationFlow(d.departures / d.totalTraffic),
+  );
 
 // Function to update circle positions when the map moves/zooms
 function updatePositions() {
@@ -152,20 +156,11 @@ function updateScatterPlot(timeFilter) {
   circles
     .data(filteredStations, (d) => d.short_name) // Ensure D3 tracks elements correctly
     .join('circle') // Ensure the data is bound correctly
-    .attr('r', (d) => radiusScale(d.totalTraffic)); // Update circle sizes
+    .attr('r', (d) => radiusScale(d.totalTraffic)) // Update circle sizes
+    .style('--departure-ratio', (d) =>
+      stationFlow(d.departures / d.totalTraffic),
+    );
 }
-
-/*let departuresByMinute = Array.from({ length: 1440 }, () => []);
-let arrivalsByMinute = Array.from({ length: 1440 }, () => []);
-
-let startedMinutes = minutesSinceMidnight(trip.started_at);
-//This function returns how many minutes have passed since `00:00` (midnight).
-departuresByMinute[startedMinutes].push(trip);
-//This adds the trip to the correct index in `departuresByMinute` so that later we can efficiently retrieve all trips that started at a specific time.
-
-arrivalsByMinute[startedMinutes].push(trip);
-// Same for arrivals
-*/
 
 } catch (error) {
     console.error('Error loading JSON:', error); // Handle errors
