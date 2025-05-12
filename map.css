@@ -40,3 +40,35 @@ body {
 fill: var(--color);
   }
 }
+
+.legend {
+  display: flex;
+  margin-block: 1rem;
+  gap: 1rem;
+  div {
+    display: flex;
+    gap: 0.5rem;
+    --color-departures: steelblue;
+--color-arrivals: darkorange;
+--color: color-mix(
+  in oklch,
+  var(--color-departures) calc(100% * var(--departure-ratio)),
+  var(--color-arrivals)
+);
+fill: var(--color);
+  }
+  div::before {
+    content: "";
+    height: 1.5rem;
+    aspect-ratio: 1/1;
+    border-radius: 50%;
+    background-color: var(--color);
+    display: inline-block;
+    /*gap: 0.5rem;*/
+  }
+}
+#map-legend {
+  text-transform: uppercase;
+  font-family: "Roboto";
+  margin-right: 0.5em;
+}
