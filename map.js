@@ -32,7 +32,7 @@ map.addLayer({
   type: 'line',
   source: 'boston_route',
   paint: {
-    'line-color': 'green',
+    'line-color': 'blue',
     'line-width': 3,
     'line-opacity': 0.4,
   },
@@ -48,7 +48,7 @@ map.addLayer({
   type: 'line',
   source: 'cambridge_route',
   paint: {
-    'line-color': 'purple',
+    'line-color': 'green',
     'line-width': 3,
     'line-opacity': 0.4,
   },
